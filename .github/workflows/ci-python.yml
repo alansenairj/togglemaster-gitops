@@ -83,7 +83,7 @@ jobs:
 
       # SCA. ignore-unfixed evita travar em CVE sem correcao publicada.
       - name: Trivy fs (SCA) — bloqueia em CRITICAL
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: fs
           scan-ref: .
@@ -96,7 +96,7 @@ jobs:
       - name: Trivy fs — relatorio HIGH/MEDIUM (informativo)
         if: always()
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: fs
           scan-ref: .
