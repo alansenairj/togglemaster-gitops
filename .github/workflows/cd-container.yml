@@ -1,0 +1,177 @@
+name: CD Container (reusable)
+
+# Vive em alansenairj/togglemaster-gitops/.github/workflows/
+# Chamado pelos 5 repos de servico, Go e Python.
+#
+# Fase 3 e 4 do pipeline. Nada aqui depende da linguagem: o Dockerfile
+# encapsula o runtime. Por isso este workflow e um so, sem nenhum condicional.
+#
+# build + scan + push ficam no MESMO job de proposito. Reusable workflows rodam
+# em runners separados, entao dividir isso obrigaria a publicar a imagem antes
+# de escanea-la.
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Nome do servico. Usado na tag local e no commit do GitOps.
+        required: true
+        type: string
+      ecr_repository:
+        description: Repositorio ECR de destino.
+        required: true
+        type: string
+      gitops_path:
+        description: "Diretorio do servico no repositorio GitOps. Ex: apps/auth"
+        required: true
+        type: string
+      gitops_repo:
+        description: "owner/repo do repositorio GitOps."
+        required: false
+        type: string
+        default: alansenairj/togglemaster-gitops
+      image_version:
+        description: Prefixo da tag. Tag final = <image_version>-<sha curto>.
+        required: false
+        type: string
+        default: v1.0.0
+      aws_region:
+        required: false
+        type: string
+        default: us-east-1
+    secrets:
+      GITOPS_TOKEN:
+        description: PAT fine-grained com escrita apenas no repositorio GitOps.
+        required: true
+
+jobs:
+  build-scan-push:
+    name: Build, Scan & Push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # exigido pelo OIDC; sem isso nao ha token para trocar na AWS
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+      registry: ${{ steps.ecr.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Definir tag da imagem
+        id: meta
+        run: echo "tag=${{ inputs.image_version }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Cache L2: type=gha reaproveita as camadas de dependencia. Se so o codigo
+      # mudou, o build nao refaz o download de pacotes dentro da imagem.
+      # load: true deixa a imagem no daemon local para o Trivy escanear.
+      # context: . porque em polyrepo o Dockerfile esta na raiz do repositorio.
+      - name: Build da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ inputs.service }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy image — bloqueia em CRITICAL
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ inputs.service }}:${{ steps.meta.outputs.tag }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      # Em Pull Request o pipeline termina aqui: valida ate o scan da imagem,
+      # mas nao publica nada e nao toca no GitOps.
+      - name: Credenciais AWS via OIDC
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Login no ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Publica so a tag de commit. Tag mutavel quebraria a premissa do GitOps
+      # de que o Git descreve exatamente o que roda no cluster.
+      - name: Push para o ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPOSITORY: ${{ inputs.ecr_repository }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          docker tag "${{ inputs.service }}:$TAG" "$REGISTRY/$REPOSITORY:$TAG"
+          docker push "$REGISTRY/$REPOSITORY:$TAG"
+          echo "Imagem publicada: \`$REGISTRY/$REPOSITORY:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+
+  gitops-writeback:
+    name: Atualizar tag no GitOps
+    needs: build-scan-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # a escrita e no outro repositorio, via GITOPS_TOKEN
+    # Os 5 repositorios escrevem no mesmo GitOps. Sem a fila, dois pipelines que
+    # terminam juntos disputam o mesmo push.
+    concurrency:
+      group: gitops-write
+      cancel-in-progress: false
+    steps:
+      - name: Checkout do repositorio GitOps
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.gitops_repo }}
+          token: ${{ secrets.GITOPS_TOKEN }}
+          ref: main
+
+      # yq edita o YAML pela estrutura. sed/regex em manifesto quebra
+      # indentacao e corrompe o estado desejado sem aviso.
+      - name: Escrever a nova tag no values
+        env:
+          VALUES: ${{ inputs.gitops_path }}/values.yaml
+          IMAGE: ${{ needs.build-scan-push.outputs.registry }}/${{ inputs.ecr_repository }}
+          TAG: ${{ needs.build-scan-push.outputs.image_tag }}
+        run: |
+          yq eval -i '.image.repository = env(IMAGE) | .image.tag = env(TAG)' "$VALUES"
+          yq eval '.image' "$VALUES"
+
+      # Retry com rebase: mesmo com a fila de concurrency, um push manual no
+      # GitOps entre o checkout e o push deixa o HEAD desatualizado.
+      - name: Commit e push
+        env:
+          VALUES: ${{ inputs.gitops_path }}/values.yaml
+          TAG: ${{ needs.build-scan-push.outputs.image_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- "$VALUES"; then
+            echo "Manifesto ja aponta para $TAG — nada a commitar."
+            exit 0
+          fi
+
+          git add "$VALUES"
+          git commit -m "chore(gitops): ${{ inputs.service }} -> $TAG"
+
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "GitOps atualizado para \`$TAG\` — ArgoCD sincroniza a partir daqui." \
+                >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Push rejeitado (tentativa $attempt de 5); rebase e nova tentativa."
+            git pull --rebase origin main
+            sleep 2
+          done
+
+          echo "Falha ao escrever no GitOps apos 5 tentativas." >&2
+          exit 1

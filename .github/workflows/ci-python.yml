@@ -1,0 +1,106 @@
+name: CI Python (reusable)
+
+# Vive em alansenairj/togglemaster-gitops/.github/workflows/
+# Chamado pelos repos Python: flag-service, targeting-service, analytics-service.
+#
+# Fase 1 e 2 do pipeline. Tudo aqui depende da linguagem. O que nao depende
+# (docker, ECR, GitOps) esta em cd-container.yml.
+#
+# Polyrepo: o repositorio E o servico, entao o codigo esta na raiz.
+
+on:
+  workflow_call:
+    inputs:
+      python_version:
+        required: false
+        type: string
+        default: "3.11"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Build & Unit Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache L1: setup-uv restaura o cache de wheels pelo hash do uv.lock.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      # pytest entra via --with para nao alterar o pyproject.toml. Adicionar
+      # dev dependency invalidaria o uv.lock e quebraria o --frozen acima.
+      - name: pytest
+        run: uv run --with pytest python -m pytest -q
+
+  lint:
+    name: Linter / Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      # Bloqueia so no que e erro de verdade: sintaxe invalida (E9) e nome
+      # indefinido (F82). Esse subconjunto nao tem falso positivo.
+      - name: ruff — bloqueia em erro de sintaxe/nome
+        run: uvx ruff check . --select=E9,F63,F7,F82 --output-format=concise
+
+      # Estilo roda informativo: o codigo herdado da Fase 2 nao foi escrito sob
+      # ruff. Passar para bloqueante quando o backlog zerar.
+      - name: ruff — relatorio completo (informativo)
+        continue-on-error: true
+        run: uvx ruff check . --output-format=concise --statistics
+
+  sec:
+    name: Security Scan (SAST + SCA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ inputs.python_version }}
+
+      # SAST. -lll = so HIGH. E o gate usado na demo de falha do video
+      # (bandit B602: subprocess com shell=True).
+      - name: bandit (SAST) — bloqueia em HIGH
+        run: uvx bandit -r . -lll -x ./.venv
+
+      - name: bandit — relatorio MEDIUM (informativo)
+        continue-on-error: true
+        run: uvx bandit -r . -ll -x ./.venv
+
+      # SCA. ignore-unfixed evita travar em CVE sem correcao publicada.
+      - name: Trivy fs (SCA) — bloqueia em CRITICAL
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: Trivy fs — relatorio HIGH/MEDIUM (informativo)
+        if: always()
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,MEDIUM
+          exit-code: "0"
+          format: table
