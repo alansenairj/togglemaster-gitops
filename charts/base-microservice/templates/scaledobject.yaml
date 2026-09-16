@@ -1,0 +1,21 @@
+{{- if .Values.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .Values.name }}-scaler
+  namespace: {{ include "base-microservice.namespace" . }}
+spec:
+  scaleTargetRef:
+    name: {{ .Values.name }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  triggers:
+    - type: aws-sqs-queue
+      metadata:
+        queueURL: {{ .Values.keda.queueURL | quote }}
+        queueLength: {{ .Values.keda.queueLength | quote }}
+        awsRegion: {{ .Values.keda.awsRegion }}
+      authenticationRef:
+        name: keda-sqs-trigger-auth
+{{- end }}

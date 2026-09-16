@@ -1,0 +1,6 @@
+dependencies:
+- name: base-microservice
+  repository: file://../../charts/base-microservice
+  version: 0.1.0
+digest: sha256:7c5709579c8cf97b62ef585a55894ef1f40eab7011e74f4f60cb3b18206632d5
+generated: "2026-09-16T14:23:18.334244285-03:00"

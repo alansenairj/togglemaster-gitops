@@ -1,0 +1,65 @@
+# Defaults do chart generico. Cada apps/<svc>/values.yaml sobrescreve so o
+# necessario — porta, imagem, env, ingress, secrets e os extras (hpa/keda).
+
+name: ""
+namespace: ""   # default: mesmo valor de name
+
+image:
+  repository: ""
+  tag: "latest"   # o job gitops-writeback do CI escreve a tag real aqui
+
+port: 8080
+
+# Vira ConfigMap. Valores de infraestrutura (AWS_SQS_URL, AWS_DYNAMODB_TABLE,
+# REDIS_URL) sao preenchidos por scripts/sync-infra-values.sh depois do
+# terraform apply — nao sao secretos, mas dependem da conta AWS.
+env: {}
+
+externalSecret:
+  enabled: false
+  remoteRef: ""     # nome do secret no AWS Secrets Manager (ex: togglemaster/auth)
+  refreshInterval: 1h
+  keys: []           # ["DATABASE_URL", "MASTER_KEY"]
+
+serviceAccount:
+  create: false
+  roleArn: ""   # ARN da role IRSA (output do Terraform)
+
+ingress:
+  enabled: true
+  path: ""   # ex: /auth(/|$)(.*)
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+probes:
+  path: /health
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+replicas: 1
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilization: 70
+  scaleDownStabilizationSeconds: 30
+
+keda:
+  enabled: false
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  cooldownPeriod: 30
+  queueURL: ""
+  queueLength: "5"
+  awsRegion: us-east-1

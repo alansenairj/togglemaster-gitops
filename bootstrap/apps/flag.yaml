@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: flag-service
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alansenairj/togglemaster-gitops.git
+    targetRevision: main
+    path: apps/flag
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: flag-service
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 5m
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

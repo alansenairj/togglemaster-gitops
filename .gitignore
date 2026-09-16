@@ -1,0 +1,4 @@
+
+# artefato gerado por `helm dependency build` — ArgoCD e o dev local
+# regeneram a partir do Chart.yaml, nao precisa versionar o binario
+apps/*/charts/*.tgz

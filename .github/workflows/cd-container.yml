@@ -135,14 +135,19 @@ jobs:
 
       # yq edita o YAML pela estrutura. sed/regex em manifesto quebra
       # indentacao e corrompe o estado desejado sem aviso.
+      #
+      # apps/<svc>/values.yaml aninha os campos sob "base-microservice": o
+      # chart de cada app declara base-microservice como subchart (dependency
+      # file://../../charts/base-microservice), e o Helm exige que os values
+      # do subchart fiquem sob uma chave com o nome dele — nao no topo.
       - name: Escrever a nova tag no values
         env:
           VALUES: ${{ inputs.gitops_path }}/values.yaml
           IMAGE: ${{ needs.build-scan-push.outputs.registry }}/${{ inputs.ecr_repository }}
           TAG: ${{ needs.build-scan-push.outputs.image_tag }}
         run: |
-          yq eval -i '.image.repository = env(IMAGE) | .image.tag = env(TAG)' "$VALUES"
-          yq eval '.image' "$VALUES"
+          yq eval -i '.["base-microservice"].image.repository = env(IMAGE) | .["base-microservice"].image.tag = env(TAG)' "$VALUES"
+          yq eval '.["base-microservice"].image' "$VALUES"
 
       # Retry com rebase: mesmo com a fila de concurrency, um push manual no
       # GitOps entre o checkout e o push deixa o HEAD desatualizado.

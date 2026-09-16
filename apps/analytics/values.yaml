@@ -1,0 +1,41 @@
+base-microservice:
+  name: analytics-service
+  namespace: analytics-service
+  port: 8005
+  replicas: 0   # KEDA escala a partir de zero conforme a fila SQS
+
+  image:
+    repository: "<ECR_REGISTRY>/togglemaster/analytics-service"
+    tag: "v1.0.0-init"
+
+  env:
+    AWS_REGION: us-east-1
+    # AWS_SQS_URL e AWS_DYNAMODB_TABLE: preenchidos por
+    # scripts/sync-infra-values.sh (terraform output sqs_queue_url /
+    # dynamodb_table_name)
+    AWS_SQS_URL: "<SQS_QUEUE_URL>"
+    AWS_DYNAMODB_TABLE: "<DYNAMODB_TABLE_NAME>"
+
+  ingress:
+    path: /analytics(/|$)(.*)
+
+  # Sem secret proprio — so IRSA (SQS + DynamoDB).
+  externalSecret:
+    enabled: false
+
+  serviceAccount:
+    create: true
+    # preenchido por scripts/sync-infra-values.sh (terraform output analytics_role_arn)
+    roleArn: "<ANALYTICS_ROLE_ARN>"
+
+  # KEDA e dono de spec/replicas em runtime — a Application correspondente
+  # ignora esse campo (ver bootstrap/apps/analytics.yaml).
+  keda:
+    enabled: true
+    minReplicaCount: 0
+    maxReplicaCount: 5
+    cooldownPeriod: 30
+    # preenchido por scripts/sync-infra-values.sh (terraform output sqs_queue_url)
+    queueURL: "<SQS_QUEUE_URL>"
+    queueLength: "5"
+    awsRegion: us-east-1

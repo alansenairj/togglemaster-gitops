@@ -1,0 +1,19 @@
+base-microservice:
+  name: targeting-service
+  port: 8003
+
+  image:
+    repository: "<ECR_REGISTRY>/togglemaster/targeting-service"
+    tag: "v1.0.0-init"
+
+  env:
+    AUTH_SERVICE_URL: "http://auth-service.auth-service.svc.cluster.local:8001"
+
+  ingress:
+    path: /rules(/|$)(.*)
+
+  externalSecret:
+    enabled: true
+    remoteRef: togglemaster/targeting
+    keys:
+      - DATABASE_URL

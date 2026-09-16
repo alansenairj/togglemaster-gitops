@@ -1,0 +1,26 @@
+# App of Apps: unico manifesto aplicado a mao (kubectl apply -f). A partir
+# daqui o ArgoCD gerencia tudo em bootstrap/apps/ sozinho.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: togglemaster-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alansenairj/togglemaster-gitops.git
+    targetRevision: main
+    path: bootstrap/apps
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

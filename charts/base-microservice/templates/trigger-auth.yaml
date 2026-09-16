@@ -1,0 +1,10 @@
+{{- if .Values.keda.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-sqs-trigger-auth
+  namespace: {{ include "base-microservice.namespace" . }}
+spec:
+  podIdentity:
+    provider: aws
+{{- end }}

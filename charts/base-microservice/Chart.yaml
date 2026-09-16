@@ -1,0 +1,6 @@
+apiVersion: v2
+name: base-microservice
+description: Chart generico dos 5 microsservicos ToggleMaster. Cada apps/<svc> declara isto como dependency e so muda values.yaml.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
