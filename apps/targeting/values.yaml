@@ -3,7 +3,7 @@ base-microservice:
   port: 8003
   image:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/targeting-service"
-    tag: "v1.0.0-init"
+    tag: "v1.0.0-1886362"
   env:
     AUTH_SERVICE_URL: "http://auth-service.auth-service.svc.cluster.local:8001"
   ingress:
