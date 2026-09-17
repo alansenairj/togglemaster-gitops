@@ -1,4 +1,12 @@
-
 # artefato gerado por `helm dependency build` — ArgoCD e o dev local
 # regeneram a partir do Chart.yaml, nao precisa versionar o binario
 apps/*/charts/*.tgz
+
+# credenciais e segredos locais — este repo e publico e recebe o write-back
+# do CI; nada que carregue segredo pode entrar aqui
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
