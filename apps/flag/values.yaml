@@ -1,17 +1,13 @@
 base-microservice:
   name: flag-service
   port: 8002
-
   image:
-    repository: "<ECR_REGISTRY>/togglemaster/flag-service"
-    tag: "v1.0.0-init"
-
+    repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/flag-service"
+    tag: "v1.0.0-12ee597"
   env:
     AUTH_SERVICE_URL: "http://auth-service.auth-service.svc.cluster.local:8001"
-
   ingress:
     path: /flags(/|$)(.*)
-
   externalSecret:
     enabled: true
     remoteRef: togglemaster/flag
