@@ -1,16 +1,13 @@
 base-microservice:
   name: auth-service
   port: 8001
-
   image:
     # preenchido por scripts/sync-infra-values.sh apos o terraform apply;
     # sobrescrito pelo job gitops-writeback a cada push na main
-    repository: "<ECR_REGISTRY>/togglemaster/auth-service"
+    repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/auth-service"
     tag: "v1.0.0-init"
-
   ingress:
     path: /auth(/|$)(.*)
-
   externalSecret:
     enabled: true
     remoteRef: togglemaster/auth

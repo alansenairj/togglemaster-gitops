@@ -14,7 +14,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${TFDIR:?defina TFDIR apontando para o diretorio terraform/ do repo do Criss}"
+: "${TFDIR:?defina TFDIR apontando para o environment (ex: terraform/environments/dev)}"
+# TFDIR aponta para o environment, nao para a raiz terraform/ — o state e os
+# outputs vivem la. Rodar com:
+#   TFDIR=/caminho/para/terraform/environments/dev ./scripts/sync-infra-values.sh
 
 tfout()      { terraform -chdir="$TFDIR" output -raw "$1"; }
 tfout_json() { terraform -chdir="$TFDIR" output -json "$1"; }

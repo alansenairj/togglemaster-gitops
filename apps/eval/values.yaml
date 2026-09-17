@@ -2,34 +2,28 @@ base-microservice:
   name: evaluation-service
   namespace: evaluation-service
   port: 8004
-
   image:
-    repository: "<ECR_REGISTRY>/togglemaster/evaluation-service"
+    repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/evaluation-service"
     tag: "v1.0.0-init"
-
   env:
     # REDIS_URL: preenchido por scripts/sync-infra-values.sh (terraform output redis_url)
-    REDIS_URL: "<REDIS_URL>"
+    REDIS_URL: "redis://togglemaster-dev-redis.sjjybo.ng.0001.use1.cache.amazonaws.com:6379"
     FLAG_SERVICE_URL: "http://flag-service.flag-service.svc.cluster.local:8002"
     TARGETING_SERVICE_URL: "http://targeting-service.targeting-service.svc.cluster.local:8003"
     AWS_REGION: us-east-1
     # AWS_SQS_URL: preenchido por scripts/sync-infra-values.sh (terraform output sqs_queue_url)
-    AWS_SQS_URL: "<SQS_QUEUE_URL>"
-
+    AWS_SQS_URL: "https://sqs.us-east-1.amazonaws.com/897355252206/togglemaster-queue-dev"
   ingress:
     path: /evaluate(/|$)(.*)
-
   externalSecret:
     enabled: true
     remoteRef: togglemaster/evaluation
     keys:
       - SERVICE_API_KEY
-
   serviceAccount:
     create: true
     # preenchido por scripts/sync-infra-values.sh (terraform output evaluation_role_arn)
-    roleArn: "<EVALUATION_ROLE_ARN>"
-
+    roleArn: "arn:aws:iam::897355252206:role/togglemaster-dev-evaluation-service"
   # HPA e dono de spec/replicas em runtime — a Application correspondente
   # ignora esse campo (ver bootstrap/apps/evaluation.yaml).
   hpa:
