@@ -4,7 +4,7 @@ base-microservice:
   port: 8004
   image:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/evaluation-service"
-    tag: "v1.0.0-init"
+    tag: "v1.0.0-3cd3955"
   env:
     # REDIS_URL: preenchido por scripts/sync-infra-values.sh (terraform output redis_url)
     REDIS_URL: "redis://togglemaster-dev-redis.sjjybo.ng.0001.use1.cache.amazonaws.com:6379"
