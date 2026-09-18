@@ -6,5 +6,9 @@ metadata:
   namespace: {{ include "base-microservice.namespace" . }}
 spec:
   podIdentity:
-    provider: aws
+    # aws-eks usa a ServiceAccount do proprio Deployment (IRSA) para assumir a
+    # role. "aws" (legado) tenta o metadata da instancia EC2 -- os nos do EKS
+    # nao tem role anexada, so a ServiceAccount tem via IRSA. Sem isso o KEDA
+    # falha com "no EC2 IMDS role found".
+    provider: aws-eks
 {{- end }}
