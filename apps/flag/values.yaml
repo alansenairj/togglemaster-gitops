@@ -3,7 +3,7 @@ base-microservice:
   port: 8002
   image:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/flag-service"
-    tag: "v1.0.0-01eea7f"
+    tag: "v1.0.0-de6567a"
   env:
     AUTH_SERVICE_URL: "http://auth-service.auth-service.svc.cluster.local:8001"
   ingress:
