@@ -7,11 +7,11 @@ metadata:
 spec:
   podIdentity:
     # aws-eks esta deprecated no KEDA 2.20 (substituido por "aws" unificado).
-    # identityOwner: operator = usa a IRSA do proprio keda-operator (role
+    # identityOwner: keda = usa a IRSA do proprio keda-operator (role
     # keda_role_arn do Terraform, anotada na ServiceAccount keda-operator no
     # namespace keda) em vez da ServiceAccount do Deployment alvo. E o modelo
     # que o Terraform ja provisiona -- sem isso o KEDA cai no IMDS do node
     # (que nao tem role) e falha com "no EC2 IMDS role found".
     provider: aws
-    identityOwner: operator
+    identityOwner: keda
 {{- end }}
