@@ -1,0 +1,117 @@
+# Coletor unico (decisao do plano). Recebe OTLP dos 5 servicos em alloy.monitoring:4317/4318.
+# traces -> Tempo (+ spanmetrics -> Prometheus); logs OTLP -> Loki; logs dos pods -> Loki.
+# O destino Datadog entra na etapa final (runbook-01, etapa 6).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: 1.15.0
+    helm:
+      releaseName: alloy
+      valuesObject:
+        controller:
+          type: deployment
+          replicas: 1
+        alloy:
+          resources:
+            requests: {cpu: 100m, memory: 200Mi}
+            limits: {memory: 400Mi}
+          extraPorts:
+            - name: otlp-grpc
+              port: 4317
+              targetPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              port: 4318
+              targetPort: 4318
+              protocol: TCP
+          configMap:
+            content: |
+              otelcol.receiver.otlp "default" {
+                grpc { endpoint = "0.0.0.0:4317" }
+                http { endpoint = "0.0.0.0:4318" }
+                output {
+                  metrics = [otelcol.processor.batch.default.input]
+                  logs    = [otelcol.processor.batch.default.input]
+                  traces  = [otelcol.connector.spanmetrics.default.input, otelcol.processor.batch.default.input]
+                }
+              }
+
+              otelcol.connector.spanmetrics "default" {
+                dimension { name = "http.route" }
+                dimension { name = "http.method" }
+                dimension { name = "http.request.method" }
+                dimension { name = "http.status_code" }
+                dimension { name = "http.response.status_code" }
+                histogram {
+                  explicit { buckets = ["50ms", "100ms", "250ms", "500ms", "1s", "2.5s", "5s"] }
+                }
+                output { metrics = [otelcol.processor.batch.default.input] }
+              }
+
+              otelcol.processor.batch "default" {
+                output {
+                  metrics = [otelcol.exporter.prometheus.default.input]
+                  logs    = [otelcol.exporter.loki.default.input]
+                  traces  = [otelcol.exporter.otlp.tempo.input]
+                }
+              }
+
+              otelcol.exporter.otlp "tempo" {
+                client {
+                  endpoint = "tempo.monitoring.svc:4317"
+                  tls { insecure = true }
+                }
+              }
+
+              otelcol.exporter.prometheus "default" {
+                forward_to = [prometheus.remote_write.default.receiver]
+              }
+
+              prometheus.remote_write "default" {
+                endpoint { url = "http://prometheus-server.monitoring.svc/api/v1/write" }
+              }
+
+              otelcol.exporter.loki "default" {
+                forward_to = [loki.write.default.receiver]
+              }
+
+              discovery.kubernetes "pods" {
+                role = "pod"
+              }
+
+              discovery.relabel "pods" {
+                targets = discovery.kubernetes.pods.targets
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "app"
+                }
+              }
+
+              loki.source.kubernetes "pods" {
+                targets    = discovery.relabel.pods.output
+                forward_to = [loki.write.default.receiver]
+              }
+
+              loki.write "default" {
+                endpoint { url = "http://loki.monitoring.svc:3100/loki/api/v1/push" }
+              }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
