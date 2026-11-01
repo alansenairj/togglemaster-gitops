@@ -21,8 +21,8 @@ spec:
           resources:
             requests: {cpu: 150m, memory: 384Mi}
             limits: {memory: 768Mi}
-          # Gerador de metricas: unica fonte de grafo de servicos, spanmetrics e
-          # TraceQL metrics (aba Rate/Explore). Escreve no Prometheus por remote write.
+          # Gerador so com local_blocks: serve apenas a aba Rate/TraceQL metrics do
+          # Explore. Spanmetrics e grafo de servicos sao gerados no Alloy (coletor).
           metricsGenerator:
             enabled: true
             remoteWriteUrl: "http://prometheus-server.monitoring.svc/api/v1/write"
@@ -30,17 +30,10 @@ spec:
               local_blocks:
                 flush_to_storage: true
                 filter_server_spans: false
-              service_graphs:
-                dimensions: [http.method, http.route]
-                enable_virtual_node_label: true
-                peer_attributes: [peer.service, db.name, db.system, server.address, messaging.system]
-              span_metrics:
-                dimensions: [http.method, http.route, http.status_code, http.response.status_code]
-                enable_target_info: true
           overrides:
             defaults:
               metrics_generator:
-                processors: [service-graphs, span-metrics, local-blocks]
+                processors: [local-blocks]
         persistence:
           enabled: false
   destination:
