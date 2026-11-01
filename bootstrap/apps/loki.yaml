@@ -4,6 +4,8 @@ kind: Application
 metadata:
   name: loki
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
 spec:
   project: default
   source:
@@ -35,6 +37,13 @@ spec:
           replicas: 1
           persistence:
             enabled: false
+          # Sem PVC o chart nao monta /var/loki e a raiz e somente leitura.
+          extraVolumes:
+            - name: loki-data
+              emptyDir: {}
+          extraVolumeMounts:
+            - name: loki-data
+              mountPath: /var/loki
           resources:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {memory: 512Mi}
