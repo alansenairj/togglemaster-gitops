@@ -4,7 +4,7 @@ base-microservice:
   port: 8004
   image:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/evaluation-service"
-    tag: "v1.0.0-cb52169"
+    tag: "v1.0.0-4d69c87"
   env:
     # OTLP -> Alloy (namespace monitoring)
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.monitoring.svc.cluster.local:4317"
