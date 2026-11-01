@@ -135,6 +135,15 @@ spec:
 
               loki.source.kubernetes "pods" {
                 targets    = discovery.relabel.pods.output
+                forward_to = [loki.process.pods.receiver]
+              }
+
+              // Descarta o ruido do proprio coletor: o kubelet nao entrega o log de
+              // container que ja morreu (rollout) e o Alloy grava essa mensagem como log.
+              loki.process "pods" {
+                stage.drop {
+                  expression = "^unable to retrieve container logs for containerd://"
+                }
                 forward_to = [loki.write.default.receiver]
               }
 
