@@ -12,13 +12,20 @@ name: CI Go (reusable)
 on:
   workflow_call:
     inputs:
+      # Fallback: so vale se o Dockerfile nao tiver "FROM golang:X.Y". A versao
+      # real vem do Dockerfile, para o CI testar com o mesmo Go da imagem.
       go_version:
         required: false
         type: string
-        default: "1.21"
+        default: "1.25"
 
 permissions:
   contents: read
+
+# Nunca baixar toolchain nova sozinho: se o go.mod pedir Go maior que o do
+# Dockerfile, o build do CI falha aqui e nao so no docker build do CD.
+env:
+  GOTOOLCHAIN: local
 
 jobs:
   test:
@@ -27,12 +34,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Go do Dockerfile
+        id: gover
+        run: |
+          v=$(sed -n 's/^FROM golang:\([0-9][0-9.]*\).*/\1/p' Dockerfile | head -1)
+          v="${v:-${{ inputs.go_version }}}"
+          echo "Go do Dockerfile: $v"
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+
       # Cache L1: setup-go restaura ~/.cache/go-build e o module cache a partir
       # do hash do go.sum.
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ inputs.go_version }}
+          go-version: ${{ steps.gover.outputs.v }}
           cache-dependency-path: go.sum
+
+      - name: go.mod cabe no Go do Dockerfile
+        run: |
+          need=$(sed -n 's/^go \([0-9][0-9.]*\).*/\1/p' go.mod | head -1 | cut -d. -f1,2)
+          have=$(echo "${{ steps.gover.outputs.v }}" | cut -d. -f1,2)
+          if [ "$(printf '%s\n%s\n' "$need" "$have" | sort -V | tail -1)" != "$have" ]; then
+            echo "::error::go.mod exige Go $need e o Dockerfile usa golang:$have. Fixe as dependencias ou suba o Dockerfile."
+            exit 1
+          fi
+          echo "go.mod ($need) cabe no Dockerfile ($have)"
 
       - name: go build
         run: go build ./...
@@ -46,9 +71,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Go do Dockerfile
+        id: gover
+        run: |
+          v=$(sed -n 's/^FROM golang:\([0-9][0-9.]*\).*/\1/p' Dockerfile | head -1)
+          v="${v:-${{ inputs.go_version }}}"
+          echo "Go do Dockerfile: $v"
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ inputs.go_version }}
+          go-version: ${{ steps.gover.outputs.v }}
           cache-dependency-path: go.sum
 
       # go vet bloqueia: pega erro real (printf malformado, lock copiado) e nao
@@ -72,9 +105,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Go do Dockerfile
+        id: gover
+        run: |
+          v=$(sed -n 's/^FROM golang:\([0-9][0-9.]*\).*/\1/p' Dockerfile | head -1)
+          v="${v:-${{ inputs.go_version }}}"
+          echo "Go do Dockerfile: $v"
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-go@v5
         with:
-          go-version: ${{ inputs.go_version }}
+          go-version: ${{ steps.gover.outputs.v }}
           cache-dependency-path: go.sum
 
       # SAST. HIGH bloqueia — e o gate usado na demo de falha do video
