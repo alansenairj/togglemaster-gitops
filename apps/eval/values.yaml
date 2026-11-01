@@ -6,6 +6,9 @@ base-microservice:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/evaluation-service"
     tag: "v1.0.0-cb52169"
   env:
+    # OTLP -> Alloy (namespace monitoring)
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.monitoring.svc.cluster.local:4317"
+    OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     # REDIS_URL: preenchido por scripts/sync-infra-values.sh (terraform output redis_url)
     REDIS_URL: "redis://togglemaster-dev-redis.sjjybo.ng.0001.use1.cache.amazonaws.com:6379"
     FLAG_SERVICE_URL: "http://flag-service.flag-service.svc.cluster.local:8002"

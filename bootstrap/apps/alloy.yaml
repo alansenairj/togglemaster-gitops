@@ -6,6 +6,8 @@ kind: Application
 metadata:
   name: alloy
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
 spec:
   project: default
   source:
@@ -93,7 +95,26 @@ spec:
                   target_label  = "namespace"
                 }
                 rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
                   source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                // app: nome do container; sobrescrito pelo label do pod quando existir.
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "app"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  regex         = "(.+)"
+                  target_label  = "app"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app"]
+                  regex         = "(.+)"
                   target_label  = "app"
                 }
               }

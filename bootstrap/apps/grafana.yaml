@@ -6,6 +6,8 @@ kind: Application
 metadata:
   name: grafana
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
 spec:
   project: default
   source:
@@ -42,10 +44,32 @@ spec:
                 uid: loki
                 type: loki
                 url: http://loki.monitoring.svc:3100
+                jsonData:
+                  # log -> trace: o campo trace_id do JSON vira link para o Tempo
+                  derivedFields:
+                    - name: trace_id
+                      matcherRegex: '"trace_id":"(\w+)"'
+                      url: '$${__value.raw}'
+                      datasourceUid: tempo
+                      urlDisplayLabel: Ver trace
               - name: Tempo
                 uid: tempo
                 type: tempo
                 url: http://tempo.monitoring.svc:3200
+                jsonData:
+                  # trace -> log: busca no Loki as linhas com o trace_id do span
+                  tracesToLogsV2:
+                    datasourceUid: loki
+                    filterByTraceID: true
+                    spanStartTimeShift: "-5m"
+                    spanEndTimeShift: "5m"
+                    tags:
+                      - key: service.name
+                        value: app
+                  serviceMap:
+                    datasourceUid: prometheus
+                  nodeGraph:
+                    enabled: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

@@ -5,6 +5,8 @@ kind: Application
 metadata:
   name: platform
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: platform
 spec:
   project: default
   source:

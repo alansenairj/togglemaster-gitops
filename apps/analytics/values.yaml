@@ -7,6 +7,9 @@ base-microservice:
     repository: "897355252206.dkr.ecr.us-east-1.amazonaws.com/togglemaster/analytics-service"
     tag: "v1.0.0-7e55421"
   env:
+    # OTLP -> Alloy (namespace monitoring)
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy.monitoring.svc.cluster.local:4317"
+    OTEL_EXPORTER_OTLP_PROTOCOL: grpc
     AWS_REGION: us-east-1
     # AWS_SQS_URL e AWS_DYNAMODB_TABLE: preenchidos por
     # scripts/sync-infra-values.sh (terraform output sqs_queue_url /

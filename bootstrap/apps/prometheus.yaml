@@ -5,6 +5,8 @@ kind: Application
 metadata:
   name: prometheus
   namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
 spec:
   project: default
   source:
