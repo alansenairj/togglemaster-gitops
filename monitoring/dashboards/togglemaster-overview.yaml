@@ -450,7 +450,7 @@ data:
         {
           "id": 13,
           "type": "row",
-          "title": "Serviços (spanmetrics via Alloy)",
+          "title": "Serviços (gerador de métricas do Tempo)",
           "collapsed": false,
           "gridPos": {
             "x": 0,
@@ -483,8 +483,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (service_name) (rate(traces_span_metrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}[1m]))",
-              "legendFormat": "{{service_name}}"
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}[1m]))",
+              "legendFormat": "{{service}}"
             }
           ]
         },
@@ -514,8 +514,8 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (service_name) (rate(traces_span_metrics_calls_total{span_kind=\"SPAN_KIND_SERVER\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (service_name) (rate(traces_span_metrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}[5m])) * 100",
-              "legendFormat": "{{service_name}}"
+              "expr": "sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\",status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (service) (rate(traces_spanmetrics_calls_total{span_kind=\"SPAN_KIND_SERVER\"}[5m])) * 100",
+              "legendFormat": "{{service}}"
             }
           ]
         },
@@ -536,15 +536,40 @@ data:
           },
           "fieldConfig": {
             "defaults": {
-              "unit": "ms"
+              "unit": "s"
             },
             "overrides": []
           },
           "targets": [
             {
               "refId": "A",
-              "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(traces_span_metrics_duration_milliseconds_bucket{span_kind=\"SPAN_KIND_SERVER\"}[5m])))",
-              "legendFormat": "{{service_name}}"
+              "expr": "histogram_quantile(0.95, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{span_kind=\"SPAN_KIND_SERVER\"}[5m])))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "type": "nodeGraph",
+          "title": "Mapa de serviços (estado por erro e latência)",
+          "datasource": {
+            "type": "tempo",
+            "uid": "tempo"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 30,
+            "w": 24,
+            "h": 12
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "queryType": "serviceMap",
+              "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+              }
             }
           ]
         },
@@ -555,7 +580,7 @@ data:
           "collapsed": false,
           "gridPos": {
             "x": 0,
-            "y": 30,
+            "y": 43,
             "w": 24,
             "h": 1
           }
@@ -570,7 +595,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 31,
+            "y": 44,
             "w": 24,
             "h": 12
           },

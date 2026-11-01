@@ -1,5 +1,5 @@
 # Coletor unico (decisao do plano). Recebe OTLP dos 5 servicos em alloy.monitoring:4317/4318.
-# traces -> Tempo (+ spanmetrics -> Prometheus); logs OTLP -> Loki; logs dos pods -> Loki.
+# traces -> Tempo (o gerador do Tempo cria spanmetrics e grafo de servicos -> Prometheus); logs OTLP -> Loki; logs dos pods -> Loki.
 # O destino Datadog entra na etapa final (runbook-01, etapa 6).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -41,20 +41,8 @@ spec:
                 output {
                   metrics = [otelcol.processor.batch.default.input]
                   logs    = [otelcol.processor.batch.default.input]
-                  traces  = [otelcol.connector.spanmetrics.default.input, otelcol.processor.batch.default.input]
+                  traces  = [otelcol.processor.batch.default.input]
                 }
-              }
-
-              otelcol.connector.spanmetrics "default" {
-                dimension { name = "http.route" }
-                dimension { name = "http.method" }
-                dimension { name = "http.request.method" }
-                dimension { name = "http.status_code" }
-                dimension { name = "http.response.status_code" }
-                histogram {
-                  explicit { buckets = ["50ms", "100ms", "250ms", "500ms", "1s", "2.5s", "5s"] }
-                }
-                output { metrics = [otelcol.processor.batch.default.input] }
               }
 
               otelcol.processor.batch "default" {
