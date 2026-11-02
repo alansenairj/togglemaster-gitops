@@ -96,17 +96,6 @@ data:
                 "$__all"
               ]
             }
-          },
-          {
-            "name": "search",
-            "label": "Logs ▸ texto contém",
-            "description": "Filtra só a seção de logs. Texto literal (diferencia maiúsculas). Vazio = tudo.",
-            "type": "textbox",
-            "query": "",
-            "current": {
-              "text": "",
-              "value": ""
-            }
           }
         ]
       },
@@ -711,7 +700,7 @@ data:
         {
           "id": 113,
           "type": "row",
-          "title": "2 · Logs — usam os filtros “Logs ▸” da barra superior (gráficos de métricas usam “Métricas ▸”)",
+          "title": "2 · Logs",
           "collapsed": false,
           "gridPos": {
             "x": 0,
@@ -844,7 +833,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$nivel\" |= \"$search\" [$__auto]))",
+              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$nivel\" [$__auto]))",
               "legendFormat": "{{detected_level}}"
             }
           ]
@@ -852,7 +841,7 @@ data:
         {
           "id": 115,
           "type": "logs",
-          "title": "Logs (namespace · nível · texto)",
+          "title": "Logs",
           "datasource": {
             "type": "loki",
             "uid": "loki"
@@ -861,7 +850,7 @@ data:
             "x": 0,
             "y": 44,
             "w": 24,
-            "h": 14
+            "h": 30
           },
           "options": {
             "showTime": true,
@@ -874,7 +863,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$nivel\" |= \"$search\""
+              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$nivel\""
             }
           ]
         },
@@ -885,7 +874,7 @@ data:
           "collapsed": false,
           "gridPos": {
             "x": 0,
-            "y": 58,
+            "y": 74,
             "w": 24,
             "h": 1
           }
@@ -901,7 +890,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 59,
+            "y": 75,
             "w": 8,
             "h": 8
           },
@@ -950,7 +939,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 59,
+            "y": 75,
             "w": 8,
             "h": 8
           },
@@ -999,7 +988,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 59,
+            "y": 75,
             "w": 8,
             "h": 8
           },
@@ -1043,7 +1032,7 @@ data:
           "collapsed": false,
           "gridPos": {
             "x": 0,
-            "y": 67,
+            "y": 83,
             "w": 24,
             "h": 1
           }
@@ -1058,7 +1047,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 68,
+            "y": 84,
             "w": 6,
             "h": 4
           },
@@ -1093,7 +1082,7 @@ data:
           },
           "gridPos": {
             "x": 6,
-            "y": 68,
+            "y": 84,
             "w": 6,
             "h": 4
           },
@@ -1132,7 +1121,7 @@ data:
           },
           "gridPos": {
             "x": 12,
-            "y": 68,
+            "y": 84,
             "w": 6,
             "h": 4
           },
@@ -1171,7 +1160,7 @@ data:
           },
           "gridPos": {
             "x": 18,
-            "y": 68,
+            "y": 84,
             "w": 6,
             "h": 4
           },
@@ -1207,7 +1196,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 72,
+            "y": 88,
             "w": 8,
             "h": 8
           },
@@ -1238,7 +1227,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 72,
+            "y": 88,
             "w": 8,
             "h": 8
           },
@@ -1269,7 +1258,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 72,
+            "y": 88,
             "w": 8,
             "h": 8
           },
@@ -1300,7 +1289,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 80,
+            "y": 96,
             "w": 8,
             "h": 8
           },
@@ -1331,7 +1320,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 80,
+            "y": 96,
             "w": 8,
             "h": 8
           },
@@ -1362,7 +1351,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 80,
+            "y": 96,
             "w": 8,
             "h": 8
           },
