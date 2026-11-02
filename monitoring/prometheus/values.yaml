@@ -1,0 +1,15 @@
+# Values do chart prometheus. Application: bootstrap/apps/prometheus.yaml (repo: Application so aponta o chart).
+alertmanager:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false
+server:
+  retention: 24h
+  persistentVolume:
+    enabled: false
+  extraFlags:
+    - web.enable-lifecycle
+    - web.enable-remote-write-receiver
+  resources:
+    requests: {cpu: 100m, memory: 400Mi}
+    limits: {memory: 800Mi}

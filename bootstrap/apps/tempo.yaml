@@ -8,34 +8,6 @@ metadata:
     app.kubernetes.io/part-of: monitoring
 spec:
   project: default
-  source:
-    repoURL: https://grafana.github.io/helm-charts
-    chart: tempo
-    targetRevision: 1.24.4
-    helm:
-      releaseName: tempo
-      valuesObject:
-        tempo:
-          retention: 24h
-          reportingEnabled: false
-          resources:
-            requests: {cpu: 150m, memory: 384Mi}
-            limits: {memory: 768Mi}
-          # Gerador so com local_blocks: serve apenas a aba Rate/TraceQL metrics do
-          # Explore. Spanmetrics e grafo de servicos sao gerados no Alloy (coletor).
-          metricsGenerator:
-            enabled: true
-            remoteWriteUrl: "http://prometheus-server.monitoring.svc/api/v1/write"
-            processor:
-              local_blocks:
-                flush_to_storage: true
-                filter_server_spans: false
-          overrides:
-            defaults:
-              metrics_generator:
-                processors: [local-blocks]
-        persistence:
-          enabled: false
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -45,3 +17,14 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: tempo
+      targetRevision: 1.24.4
+      helm:
+        releaseName: tempo
+        valueFiles:
+          - $values/monitoring/tempo/values.yaml
+    - repoURL: https://github.com/alansenairj/togglemaster-gitops.git
+      targetRevision: main
+      ref: values
