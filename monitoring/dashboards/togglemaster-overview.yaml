@@ -64,13 +64,52 @@ data:
       },
       "panels": [
         {
+          "id": 17,
+          "type": "row",
+          "title": "Logs",
+          "collapsed": false,
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 1
+          }
+        },
+        {
+          "id": 18,
+          "type": "logs",
+          "title": "Logs ($app)",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 24,
+            "h": 12
+          },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "{app=~\"$app\"} | detected_level=~\"$level\""
+            }
+          ]
+        },
+        {
           "id": 1,
           "type": "row",
           "title": "Capacidade do cluster",
           "collapsed": false,
           "gridPos": {
             "x": 0,
-            "y": 0,
+            "y": 13,
             "w": 24,
             "h": 1
           }
@@ -85,7 +124,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 1,
+            "y": 14,
             "w": 4,
             "h": 4
           },
@@ -120,7 +159,7 @@ data:
           },
           "gridPos": {
             "x": 4,
-            "y": 1,
+            "y": 14,
             "w": 4,
             "h": 4
           },
@@ -159,7 +198,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 1,
+            "y": 14,
             "w": 4,
             "h": 4
           },
@@ -198,7 +237,7 @@ data:
           },
           "gridPos": {
             "x": 12,
-            "y": 1,
+            "y": 14,
             "w": 4,
             "h": 4
           },
@@ -237,7 +276,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 1,
+            "y": 14,
             "w": 4,
             "h": 4
           },
@@ -273,7 +312,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 5,
+            "y": 18,
             "w": 8,
             "h": 8
           },
@@ -304,7 +343,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 5,
+            "y": 18,
             "w": 8,
             "h": 8
           },
@@ -335,7 +374,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 5,
+            "y": 18,
             "w": 8,
             "h": 8
           },
@@ -366,7 +405,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 13,
+            "y": 26,
             "w": 8,
             "h": 8
           },
@@ -397,7 +436,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 13,
+            "y": 26,
             "w": 8,
             "h": 8
           },
@@ -428,7 +467,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 13,
+            "y": 26,
             "w": 8,
             "h": 8
           },
@@ -455,7 +494,7 @@ data:
           "collapsed": false,
           "gridPos": {
             "x": 0,
-            "y": 21,
+            "y": 34,
             "w": 24,
             "h": 1
           }
@@ -471,7 +510,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 22,
+            "y": 35,
             "w": 8,
             "h": 8
           },
@@ -500,7 +539,7 @@ data:
           },
           "gridPos": {
             "x": 8,
-            "y": 22,
+            "y": 35,
             "w": 8,
             "h": 8
           },
@@ -531,7 +570,7 @@ data:
           },
           "gridPos": {
             "x": 16,
-            "y": 22,
+            "y": 35,
             "w": 8,
             "h": 8
           },
@@ -559,7 +598,7 @@ data:
           },
           "gridPos": {
             "x": 0,
-            "y": 30,
+            "y": 43,
             "w": 24,
             "h": 12
           },
@@ -572,45 +611,6 @@ data:
                 "uid": "tempo"
               },
               "expr": ""
-            }
-          ]
-        },
-        {
-          "id": 17,
-          "type": "row",
-          "title": "Logs",
-          "collapsed": false,
-          "gridPos": {
-            "x": 0,
-            "y": 43,
-            "w": 24,
-            "h": 1
-          }
-        },
-        {
-          "id": 18,
-          "type": "logs",
-          "title": "Logs ($app)",
-          "datasource": {
-            "type": "loki",
-            "uid": "loki"
-          },
-          "gridPos": {
-            "x": 0,
-            "y": 44,
-            "w": 24,
-            "h": 12
-          },
-          "options": {
-            "showTime": true,
-            "wrapLogMessage": true,
-            "enableLogDetails": true,
-            "sortOrder": "Descending"
-          },
-          "targets": [
-            {
-              "refId": "A",
-              "expr": "{app=~\"$app\"} | detected_level=~\"$level\""
             }
           ]
         }
