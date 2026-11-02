@@ -40,6 +40,10 @@ spec:
                 type: prometheus
                 url: http://prometheus-server.monitoring.svc:80
                 isDefault: true
+                jsonData:
+                  # scrape real = 60s; sem isto o Grafana assume 15s e $__rate_interval
+                  # fica em 1m (1 amostra), então rate() volta vazio
+                  timeInterval: 60s
               - name: Loki
                 uid: loki
                 type: loki
