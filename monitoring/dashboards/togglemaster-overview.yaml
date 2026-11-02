@@ -609,7 +609,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "{app=~\"$app\"} | json | level=~\"$level\""
+              "expr": "{app=~\"$app\"} | detected_level=~\"$level\""
             }
           ]
         }
