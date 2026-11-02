@@ -9,27 +9,6 @@ metadata:
     app.kubernetes.io/part-of: monitoring
 spec:
   project: default
-  source:
-    repoURL: https://prometheus-community.github.io/helm-charts
-    chart: prometheus
-    targetRevision: 29.40.3
-    helm:
-      releaseName: prometheus
-      valuesObject:
-        alertmanager:
-          enabled: false
-        prometheus-pushgateway:
-          enabled: false
-        server:
-          retention: 24h
-          persistentVolume:
-            enabled: false
-          extraFlags:
-            - web.enable-lifecycle
-            - web.enable-remote-write-receiver
-          resources:
-            requests: {cpu: 100m, memory: 400Mi}
-            limits: {memory: 800Mi}
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -39,3 +18,14 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus
+      targetRevision: 29.40.3
+      helm:
+        releaseName: prometheus
+        valueFiles:
+          - $values/monitoring/prometheus/values.yaml
+    - repoURL: https://github.com/alansenairj/togglemaster-gitops.git
+      targetRevision: main
+      ref: values

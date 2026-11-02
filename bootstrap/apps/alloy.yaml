@@ -10,146 +10,6 @@ metadata:
     app.kubernetes.io/part-of: monitoring
 spec:
   project: default
-  source:
-    repoURL: https://grafana.github.io/helm-charts
-    chart: alloy
-    targetRevision: 1.15.0
-    helm:
-      releaseName: alloy
-      valuesObject:
-        controller:
-          type: deployment
-          replicas: 1
-        alloy:
-          resources:
-            requests: {cpu: 100m, memory: 200Mi}
-            limits: {memory: 400Mi}
-          extraPorts:
-            - name: otlp-grpc
-              port: 4317
-              targetPort: 4317
-              protocol: TCP
-            - name: otlp-http
-              port: 4318
-              targetPort: 4318
-              protocol: TCP
-          configMap:
-            content: |
-              otelcol.receiver.otlp "default" {
-                grpc { endpoint = "0.0.0.0:4317" }
-                http { endpoint = "0.0.0.0:4318" }
-                output {
-                  metrics = [otelcol.processor.batch.default.input]
-                  logs    = [otelcol.processor.batch.default.input]
-                  traces  = [otelcol.connector.spanmetrics.default.input, otelcol.connector.servicegraph.default.input, otelcol.processor.batch.default.input]
-                }
-              }
-
-              // Metricas RED por servico (traces_span_metrics_*) a partir dos spans.
-              otelcol.connector.spanmetrics "default" {
-                dimension { name = "http.route" }
-                dimension { name = "http.method" }
-                dimension { name = "http.request.method" }
-                dimension { name = "http.status_code" }
-                dimension { name = "http.response.status_code" }
-                histogram {
-                  explicit { buckets = ["50ms", "100ms", "250ms", "500ms", "1s", "2.5s", "5s"] }
-                }
-                output { metrics = [otelcol.processor.batch.default.input] }
-              }
-
-              // Grafo de servicos (traces_service_graph_*): par client/server por span.
-              // Banco, Redis e fila entram como nos virtuais pelos atributos de peer.
-              otelcol.connector.servicegraph "default" {
-                dimensions                  = ["http.method"]
-                latency_histogram_buckets   = ["50ms", "100ms", "250ms", "500ms", "1s", "2.5s", "5s"]
-                virtual_node_peer_attributes = ["peer.service", "db.name", "db.system", "server.address", "messaging.system"]
-                store {
-                  ttl       = "10s"
-                  max_items = 10000
-                }
-                output { metrics = [otelcol.processor.batch.default.input] }
-              }
-
-              otelcol.processor.batch "default" {
-                output {
-                  metrics = [otelcol.exporter.prometheus.default.input]
-                  logs    = [otelcol.exporter.loki.default.input]
-                  traces  = [otelcol.exporter.otlp.tempo.input]
-                }
-              }
-
-              otelcol.exporter.otlp "tempo" {
-                client {
-                  endpoint = "tempo.monitoring.svc:4317"
-                  tls { insecure = true }
-                }
-              }
-
-              otelcol.exporter.prometheus "default" {
-                forward_to = [prometheus.remote_write.default.receiver]
-              }
-
-              prometheus.remote_write "default" {
-                endpoint { url = "http://prometheus-server.monitoring.svc/api/v1/write" }
-              }
-
-              otelcol.exporter.loki "default" {
-                forward_to = [loki.write.default.receiver]
-              }
-
-              discovery.kubernetes "pods" {
-                role = "pod"
-              }
-
-              discovery.relabel "pods" {
-                targets = discovery.kubernetes.pods.targets
-                rule {
-                  source_labels = ["__meta_kubernetes_namespace"]
-                  target_label  = "namespace"
-                }
-                rule {
-                  source_labels = ["__meta_kubernetes_pod_name"]
-                  target_label  = "pod"
-                }
-                rule {
-                  source_labels = ["__meta_kubernetes_pod_container_name"]
-                  target_label  = "container"
-                }
-                // app: nome do container; sobrescrito pelo label do pod quando existir.
-                rule {
-                  source_labels = ["__meta_kubernetes_pod_container_name"]
-                  target_label  = "app"
-                }
-                rule {
-                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
-                  regex         = "(.+)"
-                  target_label  = "app"
-                }
-                rule {
-                  source_labels = ["__meta_kubernetes_pod_label_app"]
-                  regex         = "(.+)"
-                  target_label  = "app"
-                }
-              }
-
-              loki.source.kubernetes "pods" {
-                targets    = discovery.relabel.pods.output
-                forward_to = [loki.process.pods.receiver]
-              }
-
-              // Descarta o ruido do proprio coletor: o kubelet nao entrega o log de
-              // container que ja morreu (rollout) e o Alloy grava essa mensagem como log.
-              loki.process "pods" {
-                stage.drop {
-                  expression = "^unable to retrieve container logs for containerd://"
-                }
-                forward_to = [loki.write.default.receiver]
-              }
-
-              loki.write "default" {
-                endpoint { url = "http://loki.monitoring.svc:3100/loki/api/v1/push" }
-              }
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -159,3 +19,14 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.15.0
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/monitoring/alloy/values.yaml
+    - repoURL: https://github.com/alansenairj/togglemaster-gitops.git
+      targetRevision: main
+      ref: values

@@ -11,7 +11,12 @@ charts/base-microservice/   chart generico: namespace, deployment, service, ingr
                              externalsecret, serviceaccount, hpa, keda
 apps/<svc>/                 Chart.yaml (dependency do chart base) + values.yaml por servico
 platform/                   ClusterSecretStore (ESO -> AWS Secrets Manager)
-bootstrap/                  root-app.yaml (App of Apps) + 7 Applications
+bootstrap/root-app.yaml     App of Apps: unico `kubectl apply` manual
+bootstrap/apps/             13 Applications do ArgoCD. Cada uma so aponta o chart/pasta;
+                             a configuracao NAO fica aqui (ver abaixo)
+monitoring/<componente>/values.yaml   configuracao de prometheus, loki, tempo, grafana, alloy
+monitoring/dashboards/      dashboard do Grafana como ConfigMap (carregado pelo sidecar)
+k6/                         teste de carga manual (ver k6/README.md)
 scripts/sync-infra-values.sh  preenche os placeholders de infra apos o terraform apply
 ```
 
@@ -59,14 +64,65 @@ Nenhum valor de credencial passa pelo Git.
 2. `./scripts/sync-infra-values.sh` + commit
 3. Instalar o ArgoCD no cluster (Helm, fora deste repo)
 4. `kubectl apply -f bootstrap/root-app.yaml` — a partir daqui o ArgoCD assume: ESO, o
-   ClusterSecretStore e os 5 microsserviços
+   ClusterSecretStore, os 5 microsserviços e a stack de observabilidade
 
 ## Ingress
 
-| Serviço | Path |
+Os 5 serviços ficam no mesmo ELB (`ingressClassName: nginx`). Cada path usa
+`rewrite-target: /$2`: o prefixo é removido antes de chegar ao serviço.
+
+| Serviço | Path no ELB | Exemplo (endpoint do serviço) |
+| --- | --- | --- |
+| auth | `/auth(/\|$)(.*)` | `/auth/validate` → `/validate` |
+| flag | `/flags(/\|$)(.*)` | `/flags/flags` → `/flags` |
+| targeting | `/rules(/\|$)(.*)` | `/rules/rules/<flag>` → `/rules/<flag>` |
+| evaluation | `/evaluate(/\|$)(.*)` | `/evaluate/evaluate?user_id=&flag_name=` → `/evaluate` |
+| analytics | `/analytics(/\|$)(.*)` | `/analytics/health` → `/health` |
+
+Autoscaling: só o `evaluation-service` tem HPA (CPU 70%, 1 a 5 réplicas). `analytics-service`
+escala por fila SQS (KEDA, 0 a 5) e fica em 0 réplicas sem mensagens. `auth`, `flag` e
+`targeting` têm 1 réplica fixa.
+
+## Chave de serviço
+
+O `evaluation-service` chama `/validate` no `auth-service` com a `SERVICE_API_KEY`. O Terraform
+entrega o mesmo valor como `MASTER_KEY` (auth) e `SERVICE_API_KEY` (evaluation). O `/validate`
+aceita a `MASTER_KEY` (comparação em tempo constante) além das chaves da tabela `api_keys`.
+Sem isso o `/evaluate` responde 502 (`flag-service retornou status 401`).
+
+## Onde mexer (manutenção)
+
+| Quero mudar | Arquivo |
 | --- | --- |
-| auth | `/auth(/\|$)(.*)` |
-| flag | `/flags(/\|$)(.*)` |
-| targeting | `/rules(/\|$)(.*)` |
-| evaluation | `/evaluate(/\|$)(.*)` |
-| analytics | `/analytics(/\|$)(.*)` |
+| Config do Alloy (pipeline OTLP, spanmetrics, exporters) | `monitoring/alloy/values.yaml` (`alloy.configMap.content`) |
+| Datasources do Grafana, senha admin | `monitoring/grafana/values.yaml` |
+| Retenção/recursos do Prometheus | `monitoring/prometheus/values.yaml` |
+| Loki, Tempo | `monitoring/loki/values.yaml`, `monitoring/tempo/values.yaml` |
+| Dashboard | `monitoring/dashboards/togglemaster-overview.yaml` |
+| Versão do chart | `bootstrap/apps/<componente>.yaml` (`targetRevision`) |
+| Um serviço (imagem, env, ingress) | `apps/<serviço>/values.yaml` |
+
+As Applications da stack usam multi-source do ArgoCD: a fonte 1 é o chart Helm, a fonte 2 é este
+repositório (`ref: values`), e o `valueFiles` aponta para `$values/monitoring/<c>/values.yaml`.
+
+## Observabilidade
+
+Alloy recebe OTLP dos serviços e coleta os logs dos pods: traces vão para o Tempo, logs para
+o Loki, e o spanmetrics vai para o Prometheus. O Grafana provisiona os 3 datasources e o
+dashboard `togglemaster-overview` (`monitoring/dashboards/`). O ArgoCD aplica o ConfigMap;
+editar o dashboard na interface não persiste (storage em `emptyDir`).
+
+Armadilhas que já custaram tempo:
+
+- **Não defina `allValue` com regex** nas variáveis do dashboard. Os datasources Loki e
+  Prometheus escapam esse valor como texto literal (`.*` vira `\.\*`) e o painel fica em
+  "No data". Sem `allValue`, "All" expande para a lista real de valores.
+- **O datasource Prometheus declara `timeInterval: 60s`** (o scrape real). Sem isso o Grafana
+  assume 15s, o `$__rate_interval` fica em 1m (uma amostra) e `rate()` volta vazio.
+- **Variável salva na URL vence o padrão do dashboard.** Se renomear ou mudar uma variável,
+  links antigos com `var-<nome>=` podem manter o valor velho.
+
+## Teste de carga
+
+`k6/` tem o smoke e a carga manual (50, 200, 500 usuários) contra os endpoints do ingress.
+Procedimento em [k6/README.md](k6/README.md). Ainda não está na pipeline.
