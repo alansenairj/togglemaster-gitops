@@ -102,8 +102,8 @@ data:
           },
           {
             "name": "search",
-            "label": "Logs ▸ texto (regex)",
-            "description": "Filtra só a seção de logs. Ignora maiúsculas.",
+            "label": "Logs ▸ texto contém",
+            "description": "Filtra só a seção de logs. Texto literal (diferencia maiúsculas). Vazio = tudo.",
             "type": "textbox",
             "query": "",
             "current": {
@@ -847,7 +847,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$level\" |~ \"(?i)$search\" [$__auto]))",
+              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$level\" |= \"$search\" [$__auto]))",
               "legendFormat": "{{detected_level}}"
             }
           ]
@@ -877,7 +877,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$level\" |~ \"(?i)$search\""
+              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$level\" |= \"$search\""
             }
           ]
         },
