@@ -81,7 +81,7 @@ data:
             }
           },
           {
-            "name": "level",
+            "name": "nivel",
             "label": "Logs ▸ nível",
             "description": "Filtra só a seção de logs.",
             "type": "custom",
@@ -844,7 +844,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$level\" |= \"$search\" [$__auto]))",
+              "expr": "sum by (detected_level) (count_over_time({namespace=~\"$ns\"} | detected_level=~\"$nivel\" |= \"$search\" [$__auto]))",
               "legendFormat": "{{detected_level}}"
             }
           ]
@@ -874,7 +874,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$level\" |= \"$search\""
+              "expr": "{namespace=~\"$ns\"} | detected_level=~\"$nivel\" |= \"$search\""
             }
           ]
         },
