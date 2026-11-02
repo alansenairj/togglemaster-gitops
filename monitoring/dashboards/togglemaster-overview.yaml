@@ -39,7 +39,6 @@ data:
             },
             "query": "label_values(traces_span_metrics_calls_total, service_name)",
             "includeAll": true,
-            "allValue": ".+",
             "multi": true,
             "refresh": 2,
             "sort": 1,
@@ -63,7 +62,6 @@ data:
             },
             "query": "label_values(kube_pod_info, namespace)",
             "includeAll": true,
-            "allValue": ".+",
             "multi": true,
             "refresh": 2,
             "sort": 1,
@@ -89,7 +87,6 @@ data:
             "type": "custom",
             "query": "error,warn,info,debug,unknown",
             "includeAll": true,
-            "allValue": ".+",
             "multi": true,
             "current": {
               "text": [
