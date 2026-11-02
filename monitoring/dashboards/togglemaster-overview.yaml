@@ -726,9 +726,13 @@ data:
           },
           "options": {
             "legend": {
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ]
             },
             "tooltip": {
               "mode": "multi",
