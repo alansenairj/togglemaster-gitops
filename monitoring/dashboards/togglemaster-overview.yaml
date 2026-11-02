@@ -26,7 +26,7 @@ data:
         "list": [
           {
             "name": "app",
-            "label": "app",
+            "label": "serviço / pod (app)",
             "type": "query",
             "datasource": {
               "type": "loki",
@@ -45,19 +45,20 @@ data:
               "text": "All",
               "value": "$__all"
             },
-            "refresh": 2
+            "refresh": 2,
+            "regex": ""
           },
           {
             "name": "level",
-            "label": "level",
+            "label": "nível",
             "type": "custom",
-            "query": "info,warn,error,debug,.*",
+            "query": "Todos : .+,info : info,warn : warn,error : error,debug : debug",
             "includeAll": false,
             "current": {
-              "text": ".*",
-              "value": ".*"
+              "text": "Todos",
+              "value": ".+"
             },
-            "options": []
+            "multi": false
           }
         ]
       },
