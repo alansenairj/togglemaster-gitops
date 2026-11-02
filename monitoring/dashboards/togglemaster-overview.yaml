@@ -926,7 +926,8 @@ data:
                 "lineWidth": 1,
                 "fillOpacity": 10,
                 "showPoints": "never"
-              }
+              },
+              "noValue": "Nenhum — tudo OK"
             },
             "overrides": []
           },
@@ -974,7 +975,8 @@ data:
                 "lineWidth": 1,
                 "fillOpacity": 10,
                 "showPoints": "never"
-              }
+              },
+              "noValue": "Nenhum — tudo OK"
             },
             "overrides": []
           },
