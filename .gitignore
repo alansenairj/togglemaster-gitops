@@ -10,3 +10,6 @@ apps/*/charts/*.tgz
 *.pem
 *.key
 secrets/
+
+# config local do Claude Code
+.claude/
