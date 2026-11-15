@@ -1,0 +1,60 @@
+# Regra de alerta do Grafana, carregada pelo sidecar de alertas (label grafana_alert).
+# Sem contact points: o alerta fica visivel no Grafana e ninguem e notificado (ChatOps e etapa seguinte).
+# Base: fork christianmilfont/togglemaster-gitops. Detalhes: runbook-01, etapa 7.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alerting
+  namespace: monitoring
+  labels:
+    grafana_alert: "1"
+data:
+  rules.yaml: |
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: togglemaster-slo
+        folder: ToggleMaster
+        interval: 1m
+        rules:
+          - uid: auth-5xx-rate
+            title: AuthServiceHigh5xxRate
+            condition: C
+            for: 2m
+            noDataState: OK
+            execErrState: OK
+            labels:
+              service: auth-service
+              severity: critical
+            annotations:
+              summary: 'auth-service com taxa de erros 5xx acima de 5% (5 min)'
+              description: 'Erros 5xx = spans SERVER com status ERROR (traces_span_metrics_calls_total).'
+              dashboard_path: /d/togglemaster-incidente
+            data:
+              - refId: A
+                relativeTimeRange: {from: 600, to: 0}
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  # Guarda de trafego: so avalia com > 0.05 req/s.
+                  expr: >-
+                    (sum(rate(traces_span_metrics_calls_total{span_kind="SPAN_KIND_SERVER",status_code="STATUS_CODE_ERROR",service_name="auth-service"}[5m])) or vector(0))
+                    / sum(rate(traces_span_metrics_calls_total{span_kind="SPAN_KIND_SERVER",service_name="auth-service"}[5m])) * 100
+                    and on() sum(rate(traces_span_metrics_calls_total{span_kind="SPAN_KIND_SERVER",service_name="auth-service"}[5m])) > 0.05
+              - refId: B
+                datasourceUid: __expr__
+                model:
+                  refId: B
+                  type: reduce
+                  expression: A
+                  reducer: last
+                  settings: {mode: dropNN}
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: B
+                  conditions:
+                    - evaluator: {type: gt, params: [5]}

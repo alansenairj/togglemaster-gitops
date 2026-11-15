@@ -13,6 +13,10 @@ sidecar:
     enabled: true
     label: grafana_dashboard
     searchNamespace: monitoring
+  alerts:
+    enabled: true
+    label: grafana_alert
+    searchNamespace: monitoring
 datasources:
   datasources.yaml:
     apiVersion: 1
