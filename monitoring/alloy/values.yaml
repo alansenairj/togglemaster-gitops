@@ -57,13 +57,21 @@ alloy:
         output {
           metrics = [otelcol.exporter.prometheus.default.input]
           logs    = [otelcol.exporter.loki.default.input]
-          traces  = [otelcol.exporter.otlp.tempo.input]
+          traces  = [otelcol.exporter.otlp.tempo.input, otelcol.exporter.otlp.datadog.input]
         }
       }
 
       otelcol.exporter.otlp "tempo" {
         client {
           endpoint = "tempo.monitoring.svc:4317"
+          tls { insecure = true }
+        }
+      }
+
+      // Datadog (APM): o Agent do Datadog recebe OTLP e envia ao Datadog.
+      otelcol.exporter.otlp "datadog" {
+        client {
+          endpoint = "datadog-agent.datadog.svc:4317"
           tls { insecure = true }
         }
       }
