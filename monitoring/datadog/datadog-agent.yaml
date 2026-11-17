@@ -1,0 +1,31 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: datadog
+spec:
+  global:
+    site: datadoghq.com
+    clusterName: togglemaster-dev
+    tags:
+      - "env:dev"
+    registry: public.ecr.aws/datadog
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+  features:
+    apm:
+      enabled: true
+    clusterChecks:
+      enabled: true
+    eventCollection:
+      collectKubernetesEvents: true
+    logCollection:
+      enabled: true
+      containerCollectAll: true
+    orchestratorExplorer:
+      enabled: true
+    # Recebe OTLP do Alloy (traces) em datadog-agent.datadog.svc:4317.
+    otelCollector:
+      enabled: true

@@ -1,0 +1,28 @@
+# Datadog Operator (CRDs + controller). O DatadogAgent fica em datadog-agent.yaml (sync-wave 1).
+# Secret `datadog-secret` (api-key) e criado fora do git, no namespace datadog.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog-operator
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: datadog
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+  source:
+    repoURL: https://helm.datadoghq.com
+    chart: datadog-operator
+    targetRevision: 2.32.0
+    helm:
+      releaseName: datadog-operator
